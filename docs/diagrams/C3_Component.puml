@@ -1,0 +1,61 @@
+@startuml C3_Component_Diagram
+
+title HTTP API Server - Компонентная диаграмма (C3)
+
+package "HTTP API Server" {
+
+  [Auth Handler] as Auth
+  [Orders Handler] as Orders
+  [Balance Handler] as Balance
+  [Accrual Client] as AccrualClient
+  [Data Access Layer] as DAL
+  
+  [Middleware\nАутентификация] as Middleware
+}
+
+database "PostgreSQL" as DB {
+  [Users] as UsersTable
+  [Orders] as OrdersTable  
+  [Balances] as BalancesTable
+  [Withdrawals] as WithdrawalsTable
+}
+
+rectangle "Пользователь" as User
+rectangle "Accrual System" as AccrualSystem
+
+User --> Middleware : HTTP запросы
+Middleware --> Auth : Проверка аутентификации
+Auth --> Orders : Авторизованные запросы
+Auth --> Balance : Авторизованные запросы
+
+Orders --> AccrualClient : Запрос статуса заказов
+AccrualClient --> AccrualSystem : GET /api/orders/{number}
+
+Orders --> DAL : Работа с заказами
+Balance --> DAL : Управление балансом
+Auth --> DAL : Проверка учетных данных
+
+DAL --> UsersTable : CRUD операций
+DAL --> OrdersTable : CRUD операций  
+DAL --> BalancesTable : CRUD операций
+DAL --> WithdrawalsTable : CRUD операций
+
+note bottom of Auth
+Регистрация (/register)
+Аутентификация (/login)
+Управление сессиями
+end note
+
+note bottom of Orders
+Загрузка заказов (/orders)
+Список заказов (/orders)
+Валидация (алгоритм Луна)
+end note
+
+note bottom of Balance
+Баланс (/balance)
+Списание (/withdraw)
+История (/withdrawals)
+end note
+
+@enduml

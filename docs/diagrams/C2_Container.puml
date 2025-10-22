@@ -1,0 +1,26 @@
+@startuml C2_Container_Diagram
+
+title Система лояльности "Гофермарт" - Контейнерная диаграмма (C2)
+
+rectangle "Пользователь" as User
+rectangle "Система расчёта баллов" as AccrualSystem
+
+package "Накопительная система лояльности «Гофермарт»" {
+
+  [HTTP API Server\n(Golang Application)] as API
+  [PostgreSQL Database] as DB
+  
+  API ..> DB : Чтение/запись данных
+}
+
+User --> API : HTTP REST API\n(все эндпоинты)
+API --> AccrualSystem : REST API\nGET /api/orders/{number}
+
+note right of API
+Конфигурация:
+- RUN_ADDRESS
+- DATABASE_URI  
+- ACCRUAL_SYSTEM_ADDRESS
+end note
+
+@enduml

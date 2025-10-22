@@ -1,0 +1,19 @@
+@startuml C1_Context_Diagram
+
+!define RECTANGLE class
+!define COMPONENT component
+
+title Система лояльности "Гофермарт" - Контекстная диаграмма (C1)
+
+rectangle "Накопительная система лояльности «Гофермарт»" as LoyaltySystem {
+}
+
+rectangle "Пользователь" as User
+rectangle "Интернет-магазин «Гофермарт»" as Shop
+rectangle "Система расчёта баллов лояльности" as AccrualSystem
+
+User --> LoyaltySystem : Регистрация, аутентификация\nзагрузка заказов, управление балансом
+Shop --> LoyaltySystem : Совершение покупок (гипотетически)
+LoyaltySystem --> AccrualSystem : Запрос статуса заказов\nи расчёта начислений
+
+@enduml

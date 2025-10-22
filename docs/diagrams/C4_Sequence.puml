@@ -1,0 +1,48 @@
+@startuml C4_Sequence_Diagram
+
+title Последовательность операций - Загрузка заказа
+
+actor "Пользователь" as User
+participant "API Server" as API
+participant "Auth Middleware" as Auth
+participant "Orders Handler" as Orders
+participant "Accrual Client" as Accrual
+participant "Database" as DB
+participant "Accrual System" as ExtSystem
+
+User -> API: POST /api/user/orders\n(номер заказа)
+API -> Auth: Проверка аутентификации
+Auth -> DB: Проверка сессии/токена
+DB --> Auth: Данные пользователя
+Auth --> API: Успешная аутентификация
+
+API -> Orders: Обработка заказа
+Orders -> DB: Проверка существования заказа
+DB --> Orders: Результат проверки
+
+alt Заказ уже существует у пользователя
+    Orders --> API: 200 OK
+    API --> User: Заказ уже загружен
+    
+else Заказ существует у другого пользователя
+    Orders --> API: 409 Conflict
+    API --> User: Конфликт
+    
+else Новый заказ
+    Orders -> DB: Сохранение заказа (status=NEW)
+    Orders -> Accrual: Запрос статуса заказа
+    Accrual -> ExtSystem: GET /api/orders/{number}
+    
+    ExtSystem --> Accrual: Статус PROCESSING
+    Accrual -> DB: Обновление статуса
+    Orders --> API: 202 Accepted
+    API --> User: Заказ принят в обработку
+    
+    Accrual -> Accrual: Периодический опрос статуса
+    Accrual -> ExtSystem: GET /api/orders/{number}
+    ExtSystem --> Accrual: Статус PROCESSED + accrual
+    Accrual -> DB: Обновление статуса и начисления
+    Accrual -> DB: Обновление баланса пользователя
+end
+
+@enduml

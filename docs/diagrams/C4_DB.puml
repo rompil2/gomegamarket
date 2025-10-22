@@ -1,0 +1,64 @@
+@startuml C4_Database_Schema
+
+title Database Schema - Модель данных (C4)
+
+entity "users" as Users {
+  * id: UUID <<PK>>
+  --
+  * login: VARCHAR(255) <<UNIQUE>>
+  * password_hash: VARCHAR(255)
+  * created_at: TIMESTAMPTZ
+}
+
+entity "orders" as Orders {
+  * id: UUID <<PK>>
+  --
+  * user_id: UUID <<FK>>
+  * number: VARCHAR(255) <<UNIQUE>>
+  * status: VARCHAR(50)
+  # accrual: DECIMAL(10,2)
+  * uploaded_at: TIMESTAMPTZ
+  processed_at: TIMESTAMPTZ
+}
+
+entity "balances" as Balances {
+  * user_id: UUID <<PK>> <<FK>>
+  --
+  * current_balance: DECIMAL(10,2)
+  * withdrawn_balance: DECIMAL(10,2)
+  * updated_at: TIMESTAMPTZ
+}
+
+entity "withdrawals" as Withdrawals {
+  * id: UUID <<PK>>
+  --
+  * user_id: UUID <<FK>>
+  * order_number: VARCHAR(255)
+  * sum: DECIMAL(10,2)
+  * processed_at: TIMESTAMPTZ
+}
+
+Users ||..||Balances
+Users ||..o Orders
+Users ||..o Withdrawals
+
+note top of Users
+Статусы заказов:
+- NEW
+- PROCESSING  
+- PROCESSED
+- INVALID
+end note
+
+note right of Orders
+number - номер заказа
+accrual - сумма начисления
+status - статус обработки
+end note
+
+note left of Balances
+current - текущий баланс
+withdrawn - сумма списаний
+end note
+
+@enduml
