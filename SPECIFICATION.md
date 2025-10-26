@@ -4,6 +4,13 @@
 
 ---
 
+### Диаграммы С4
+![image](docs/diagrams/out/C1_Context/C1_Context_Diagram.png)
+![image](docs/diagrams/out/C2_Container/C2_Container_Diagram.png)
+![image](docs/diagrams/out/C3_Component/C3_Component_Diagram.png)
+![image](docs/diagrams/out/C4_DB/C4_Database_Schema.png)
+![image](docs/diagrams/out/C4_Sequence/C4_Sequence_Diagram.png)
+
 ### Общие требования
 
 Система представляет собой HTTP API со следующими требованиями к бизнес-логике:
