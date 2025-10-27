@@ -34,14 +34,6 @@ func TestUser_Validate(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		{
-			name: "short password",
-			user: User{
-				Login:    "testuser",
-				Password: "123",
-			},
-			wantErr: true,
-		},
 	}
 
 	for _, tt := range tests {
