@@ -43,6 +43,9 @@ func main() {
 		}
 	}()
 	slog.Info("Database connection established")
+	if err := repo.Migrate(); err != nil {
+		slog.Error("Migrations failed with an error", "error", err)
+	}
 
 	// Инициализируем сервис начислений
 	var accrualService service.AccrualService

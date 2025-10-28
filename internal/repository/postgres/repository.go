@@ -4,11 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/pressly/goose/v3"
 
+	"github.com/rompil2/gomegamarket/internal/migrations"
 	"github.com/rompil2/gomegamarket/internal/repository"
 )
 
@@ -63,4 +67,17 @@ func (r *PostgresRepository) BeginTx(ctx context.Context) (repository.Transactio
 func isUniqueViolation(err error) bool {
 	var pgErr *pgconn.PgError
 	return errors.As(err, &pgErr) && pgErr.Code == "23505"
+}
+
+func (r *PostgresRepository) Migrate() error {
+	goose.SetBaseFS(migrations.Migrations)
+	if err := goose.SetDialect("postgres"); err != nil {
+		return err
+	}
+	db := stdlib.OpenDBFromPool(r.db)
+	if err := goose.Up(db, "."); err != nil {
+		return err
+	}
+	slog.Info("Migration completed successfully")
+	return nil
 }
