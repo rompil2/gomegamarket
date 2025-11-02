@@ -36,7 +36,7 @@ func TestWithUserID(t *testing.T) {
 	})
 
 	t.Run("nil context becomes background", func(t *testing.T) {
-		ctx := WithUserID(nil, "user-123")
+		ctx := WithUserID(context.TODO(), "user-123")
 		require.NotNil(t, ctx)
 
 		userID, ok := GetUserIDFromContext(ctx)
@@ -63,7 +63,7 @@ func TestGetUserIDFromContext(t *testing.T) {
 	})
 
 	t.Run("nil context", func(t *testing.T) {
-		userID, ok := GetUserIDFromContext(nil)
+		userID, ok := GetUserIDFromContext(context.TODO())
 		assert.False(t, ok)
 		assert.Empty(t, userID)
 	})
@@ -115,7 +115,7 @@ func TestSafeGetUserIDFromContext(t *testing.T) {
 	})
 
 	t.Run("nil context", func(t *testing.T) {
-		userID, err := SafeGetUserIDFromContext(nil)
+		userID, err := SafeGetUserIDFromContext(context.TODO())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "nil")
 		assert.Empty(t, userID)
@@ -161,7 +161,7 @@ func TestCloneContextWithUserID(t *testing.T) {
 	})
 
 	t.Run("nil parent", func(t *testing.T) {
-		ctx := CloneContextWithUserID(nil, "user-333")
+		ctx := CloneContextWithUserID(context.TODO(), "user-333")
 
 		userID, ok := GetUserIDFromContext(ctx)
 		assert.True(t, ok)
@@ -205,8 +205,7 @@ func BenchmarkWithUserID(b *testing.B) {
 func BenchmarkGetUserIDFromContext(b *testing.B) {
 	ctx := WithUserID(context.Background(), "benchmark-user")
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		GetUserIDFromContext(ctx)
 	}
 }
