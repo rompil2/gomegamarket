@@ -13,6 +13,7 @@ import (
 	"github.com/pressly/goose/v3"
 
 	"github.com/rompil2/gomegamarket/internal/migrations"
+	"github.com/rompil2/gomegamarket/internal/repository"
 )
 
 type PostgresRepository struct {
@@ -25,17 +26,18 @@ func New(databaseURI string) (*PostgresRepository, error) {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
 
-	config.MaxConns = 10
-	config.MinConns = 2
+	config.MaxConns = 20
+	config.MinConns = 5
 	config.MaxConnLifetime = time.Hour
 	config.MaxConnIdleTime = 30 * time.Minute
+	config.HealthCheckPeriod = 30 * time.Second // Должен быть положительным
+	config.ConnConfig.ConnectTimeout = 5 * time.Second
 
 	db, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
 		return nil, fmt.Errorf("create pool: %w", err)
 	}
 
-	// Test connection
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -51,6 +53,15 @@ func (r *PostgresRepository) Close() error {
 		r.db.Close()
 	}
 	return nil
+}
+
+func (r *PostgresRepository) BeginTx(ctx context.Context) (repository.Transaction, error) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin transaction: %w", err)
+	}
+
+	return &PostgresTransaction{tx: tx}, nil
 }
 
 // Helper function to check if error is a unique violation

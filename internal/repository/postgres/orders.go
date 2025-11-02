@@ -2,8 +2,6 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -38,7 +36,7 @@ func (r *PostgresRepository) GetOrderByNumber(ctx context.Context, number string
 	`
 
 	var order models.Order
-	var accrual sql.NullFloat64
+	var accrual *float64
 
 	err := r.db.QueryRow(ctx, query, number).Scan(
 		&order.Number,
@@ -49,16 +47,13 @@ func (r *PostgresRepository) GetOrderByNumber(ctx context.Context, number string
 	)
 
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if err == pgx.ErrNoRows {
 			return nil, repository.ErrOrderNotFound
 		}
 		return nil, fmt.Errorf("get order by number: %w", err)
 	}
 
-	if accrual.Valid {
-		order.Accrual = &accrual.Float64
-	}
-
+	order.Accrual = accrual
 	return &order, nil
 }
 
@@ -79,7 +74,7 @@ func (r *PostgresRepository) GetUserOrders(ctx context.Context, userID string) (
 	var orders []*models.Order
 	for rows.Next() {
 		var order models.Order
-		var accrual sql.NullFloat64
+		var accrual *float64
 
 		err := rows.Scan(
 			&order.Number,
@@ -92,10 +87,7 @@ func (r *PostgresRepository) GetUserOrders(ctx context.Context, userID string) (
 			return nil, fmt.Errorf("scan order: %w", err)
 		}
 
-		if accrual.Valid {
-			order.Accrual = &accrual.Float64
-		}
-
+		order.Accrual = accrual
 		orders = append(orders, &order)
 	}
 
@@ -124,7 +116,7 @@ func (r *PostgresRepository) GetOrdersForProcessing(ctx context.Context, limit i
 	var orders []*models.Order
 	for rows.Next() {
 		var order models.Order
-		var accrual sql.NullFloat64
+		var accrual *float64
 
 		err := rows.Scan(
 			&order.Number,
@@ -137,10 +129,7 @@ func (r *PostgresRepository) GetOrdersForProcessing(ctx context.Context, limit i
 			return nil, fmt.Errorf("scan order: %w", err)
 		}
 
-		if accrual.Valid {
-			order.Accrual = &accrual.Float64
-		}
-
+		order.Accrual = accrual
 		orders = append(orders, &order)
 	}
 
@@ -158,14 +147,7 @@ func (r *PostgresRepository) UpdateOrder(ctx context.Context, order *models.Orde
 		WHERE number = $3
 	`
 
-	var accrual interface{}
-	if order.Accrual != nil {
-		accrual = *order.Accrual
-	} else {
-		accrual = nil
-	}
-
-	_, err := r.db.Exec(ctx, query, order.Status, accrual, order.Number)
+	_, err := r.db.Exec(ctx, query, order.Status, order.Accrual, order.Number)
 	if err != nil {
 		return fmt.Errorf("update order: %w", err)
 	}

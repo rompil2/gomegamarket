@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -45,7 +44,7 @@ func (r *PostgresRepository) GetUserByID(ctx context.Context, id string) (*model
 	)
 
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if err == pgx.ErrNoRows {
 			return nil, repository.ErrUserNotFound
 		}
 		return nil, fmt.Errorf("get user by id: %w", err)
@@ -70,7 +69,7 @@ func (r *PostgresRepository) GetUserByLogin(ctx context.Context, login string) (
 	)
 
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if err == pgx.ErrNoRows {
 			return nil, repository.ErrUserNotFound
 		}
 		return nil, fmt.Errorf("get user by login: %w", err)
