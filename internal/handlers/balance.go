@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -42,8 +43,10 @@ func (h *Handler) Withdraw(c *gin.Context) {
 		return
 	}
 
+	fmt.Printf("Withdraw request: userID=%v, order=%s, sum=%f\n", userID, req.Order, req.Sum)
 	err := h.service.Withdraw(c.Request.Context(), userID.(string), &req)
 	if err != nil {
+		fmt.Printf("Withdraw error: %v\n", err)
 		switch err {
 		case service.ErrInvalidOrderNumber:
 			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Invalid order number"})

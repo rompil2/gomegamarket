@@ -30,44 +30,62 @@ func (s *BalanceServiceImpl) GetBalance(ctx context.Context, userID string) (*mo
 }
 
 func (s *BalanceServiceImpl) Withdraw(ctx context.Context, userID string, req *models.WithdrawRequest) error {
-	// Validate order number
+	// 1. Валидация номера заказа
 	if !utils.ValidLuhn(req.Order) {
 		return ErrInvalidOrderNumber
 	}
 
-	// Check if order already exists for withdrawal
+	// 2. Проверка существования заказа
 	existingOrder, err := s.repo.GetOrderByNumber(ctx, req.Order)
 	if err != nil && !errors.Is(err, repository.ErrOrderNotFound) {
 		return fmt.Errorf("check order: %w", err)
 	}
-
 	if existingOrder != nil {
 		return fmt.Errorf("order %s already exists", req.Order)
 	}
 
-	// Check sufficient balance
-	balance, err := s.repo.GetBalance(ctx, userID)
+	// 3. Начать транзакцию
+	tx, err := s.repo.BeginTx(ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// 4. Получить текущий баланс с блокировкой
+	balance, err := tx.GetBalance(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("get balance: %w", err)
 	}
 
+	// 5. Проверить достаточность средств
 	if balance.Current < req.Sum {
 		return ErrInsufficientBalance
 	}
 
-	// Create withdrawal
+	// 6. Создать запись о списании
 	withdrawal := &models.Withdrawal{
 		UserID: userID,
 		Order:  req.Order,
 		Sum:    req.Sum,
 	}
 
-	err = s.repo.CreateWithdrawal(ctx, withdrawal)
+	err = tx.CreateWithdrawal(ctx, withdrawal)
 	if err != nil {
-		if errors.Is(err, repository.ErrInsufficientBalance) {
-			return ErrInsufficientBalance
-		}
 		return fmt.Errorf("create withdrawal: %w", err)
+	}
+
+	// 7. Обновить баланс
+	newCurrent := balance.Current - req.Sum
+	newWithdrawn := balance.Withdrawn + req.Sum
+
+	err = tx.UpdateBalance(ctx, userID, newCurrent, newWithdrawn)
+	if err != nil {
+		return fmt.Errorf("update balance: %w", err)
+	}
+
+	// 8. Зафиксировать транзакцию
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit transaction: %w", err)
 	}
 
 	return nil
