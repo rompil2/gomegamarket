@@ -41,7 +41,6 @@ type Repository interface {
 	UserRepository
 	OrderRepository
 	BalanceRepository
-	BeginTx(ctx context.Context) (Transaction, error)
 	Close() error
 }
 

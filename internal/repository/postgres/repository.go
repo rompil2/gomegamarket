@@ -13,7 +13,6 @@ import (
 	"github.com/pressly/goose/v3"
 
 	"github.com/rompil2/gomegamarket/internal/migrations"
-	"github.com/rompil2/gomegamarket/internal/repository"
 )
 
 type PostgresRepository struct {
@@ -52,15 +51,6 @@ func (r *PostgresRepository) Close() error {
 		r.db.Close()
 	}
 	return nil
-}
-
-func (r *PostgresRepository) BeginTx(ctx context.Context) (repository.Transaction, error) {
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("begin transaction: %w", err)
-	}
-
-	return &PostgresTransaction{tx: tx}, nil
 }
 
 // Helper function to check if error is a unique violation

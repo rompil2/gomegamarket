@@ -44,15 +44,8 @@ func (s *BalanceServiceImpl) Withdraw(ctx context.Context, userID string, req *m
 		return fmt.Errorf("order %s already exists", req.Order)
 	}
 
-	// 3. Начать транзакцию
-	tx, err := s.repo.BeginTx(ctx)
-	if err != nil {
-		return fmt.Errorf("begin transaction: %w", err)
-	}
-	defer tx.Rollback()
-
 	// 4. Получить текущий баланс с блокировкой
-	balance, err := tx.GetBalance(ctx, userID)
+	balance, err := s.repo.GetBalance(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("get balance: %w", err)
 	}
@@ -69,7 +62,7 @@ func (s *BalanceServiceImpl) Withdraw(ctx context.Context, userID string, req *m
 		Sum:    req.Sum,
 	}
 
-	err = tx.CreateWithdrawal(ctx, withdrawal)
+	err = s.repo.CreateWithdrawal(ctx, withdrawal)
 	if err != nil {
 		return fmt.Errorf("create withdrawal: %w", err)
 	}
@@ -78,14 +71,9 @@ func (s *BalanceServiceImpl) Withdraw(ctx context.Context, userID string, req *m
 	newCurrent := balance.Current - req.Sum
 	newWithdrawn := balance.Withdrawn + req.Sum
 
-	err = tx.UpdateBalance(ctx, userID, newCurrent, newWithdrawn)
+	err = s.repo.UpdateBalance(ctx, userID, newCurrent, newWithdrawn)
 	if err != nil {
 		return fmt.Errorf("update balance: %w", err)
-	}
-
-	// 8. Зафиксировать транзакцию
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit transaction: %w", err)
 	}
 
 	return nil
