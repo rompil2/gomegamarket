@@ -40,7 +40,6 @@ func Load(args []string) *Config {
 	} else {
 		// in case of empty secret it must throw a panic
 		panic("JWT secret is required")
-
 	}
 
 	return cfg
