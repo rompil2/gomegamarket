@@ -84,9 +84,12 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
+	// Создаём контекст для воркеров, который будет отменён при завершении
+	workerCtx, cancelWorkers := context.WithCancel(context.Background())
+
 	// Запускаем горутину для обработки заказов
 	if accrualService != nil {
-		go startOrderProcessing(context.Background(), svc)
+		go startOrderProcessing(workerCtx, svc)
 	}
 
 	// Запускаем сервер в отдельной горутине
@@ -101,6 +104,9 @@ func main() {
 	// Ожидаем сигнал завершения
 	<-quit
 	slog.Info("Shutdown signal received")
+
+	// Отменяем контекст воркеров
+	cancelWorkers()
 
 	// Graceful shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
