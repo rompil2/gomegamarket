@@ -38,7 +38,9 @@ func Load(args []string) *Config {
 	if secret := os.Getenv("JWT_SECRET"); secret != "" {
 		cfg.JWTSecret = secret
 	} else {
-		cfg.JWTSecret = "default-secret-key-change-in-production"
+		// in case of empty secret it must throw a panic
+		panic("JWT secret is required")
+
 	}
 
 	return cfg
