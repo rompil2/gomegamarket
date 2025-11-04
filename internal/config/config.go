@@ -2,7 +2,10 @@ package config
 
 import (
 	"flag"
+	"log/slog"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -13,6 +16,10 @@ type Config struct {
 }
 
 func Load(args []string) *Config {
+	// loads values from .env into the system
+	if err := godotenv.Load(); err != nil {
+		slog.Warn("No .env file found")
+	}
 	cfg := &Config{}
 
 	flagSet := flag.NewFlagSet("gophermart", flag.ContinueOnError)
@@ -38,7 +45,8 @@ func Load(args []string) *Config {
 	if secret := os.Getenv("JWT_SECRET"); secret != "" {
 		cfg.JWTSecret = secret
 	} else {
-		cfg.JWTSecret = "default-secret-key-change-in-production"
+		// in case of empty secret it must throw a panic
+		panic("JWT secret is required")
 	}
 
 	return cfg
