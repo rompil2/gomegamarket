@@ -149,7 +149,7 @@ func TestMaskDBPassword(t *testing.T) {
 		{
 			name:     "simple DSN",
 			input:    "postgres://user:password@localhost/db",
-			expected: "postgres://user:password@localhost/db",
+			expected: "postgres://user:*****@localhost/db",
 		},
 		{
 			name:     "empty string",

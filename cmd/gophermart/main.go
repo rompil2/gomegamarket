@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -151,7 +152,34 @@ func startOrderProcessing(ctx context.Context, svc service.Service) {
 
 // maskDBPassword маскирует пароль в строке подключения к БД для логов
 func maskDBPassword(dbURI string) string {
-	return dbURI
+	// в строке вида postgres://login:passwerd@host:port/db_name заменяю password на *****
+	// Ищем начало пароля: после "://", до "@" (но после логина:пароля)
+	protocolEnd := strings.Index(dbURI, "://")
+	if protocolEnd == -1 {
+		return dbURI // Неверный формат
+	}
+
+	// Ищем начало логина:пароля — после "://"
+	authStart := protocolEnd + 3
+	atIndex := strings.Index(dbURI[authStart:], "@")
+	if atIndex == -1 {
+		return dbURI // Нет @, значит, нет пароля
+	}
+	atIndex += authStart
+
+	// Находим двоеточие между логином и паролем
+	loginEnd := strings.LastIndex(dbURI[:atIndex], ":")
+	if loginEnd == -1 || loginEnd < authStart {
+		return dbURI // Нет двоеточия между логином и паролем
+	}
+
+	// Теперь выделяем начало пароля (после двоеточия) и до "@"
+	start := loginEnd
+	end := atIndex
+
+	// Формируем новую строку с замаскированным паролем
+	maskedDBURI := dbURI[:start+1] + "*****" + dbURI[end:]
+	return maskedDBURI
 }
 
 // init выполняется при инициализации пакета
